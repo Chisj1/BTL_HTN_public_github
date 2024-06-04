@@ -5,6 +5,6 @@
 
 ## Sinh viên thực hiện
 - Vũ Đức Lộc : 21020927
-- Nguyễn Công Minh: 21020450
+- Nguyễn Công Minh : 21020450
 
   
