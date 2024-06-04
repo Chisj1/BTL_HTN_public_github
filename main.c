@@ -32,8 +32,8 @@
 /* Macros for I2C Bus*/
 #define I2C0_SCL                           (24)
 #define I2C0_SDA                           (25)
-#define READ(x)                            ((x<<1)|(0x01))
-#define WRITE(x)                           ((x<<1)&(0xFE))
+#define EXTEND_READ_BIT(x)                 ((x<<1)|(0x01))
+#define EXTEND_WRITE_BIT(x)                (x<<1) 
 
 /* Macros for Magnetometer Device*/
 #define MAG_DEVICE_ADDRESS                 0x0E
@@ -271,7 +271,7 @@ unsigned char I2C_SingleByteRead(unsigned char device_address, unsigned char reg
 {   
 	unsigned char DATA =0;
 	I2C_Start();
-	I2C_Write(WRITE(device_address));
+	I2C_Write(EXTEND_WRITE_BIT(device_address));
 	I2C_Wait();
 	I2C_Wait_ACK() ;
 
@@ -280,7 +280,7 @@ unsigned char I2C_SingleByteRead(unsigned char device_address, unsigned char reg
 	I2C_Wait_ACK() ;
 
 	I2C_Repeated_start();
-	I2C_Write(READ(device_address));
+	I2C_Write(EXTEND_READ_BIT(device_address));
 	I2C_NAck();
 	I2C_Wait();
 	I2C_Wait_ACK() ;
@@ -299,7 +299,7 @@ unsigned char I2C_SingleByteRead(unsigned char device_address, unsigned char reg
 void I2C_MultipleByteRead(unsigned char device_address,unsigned char reg_address, int max_count)
 {   unsigned char DATA_DUMMY = 0;
 	I2C_Start();
-	I2C_Write(WRITE(device_address));
+	I2C_Write(EXTEND_WRITE_BIT(device_address));
 	I2C_Wait();
 	I2C_Wait_ACK();
 
@@ -308,7 +308,7 @@ void I2C_MultipleByteRead(unsigned char device_address,unsigned char reg_address
 	I2C_Wait_ACK();
 
 	I2C_Repeated_start();
-	I2C_Write(READ(device_address));
+	I2C_Write(EXTEND_READ_BIT(device_address));
 	I2C_Wait();
 	I2C_Wait_ACK();
 
@@ -339,7 +339,7 @@ void I2C_MultipleByteRead(unsigned char device_address,unsigned char reg_address
 void I2C_SingleByteWrite(unsigned char device_address, unsigned char reg_address, unsigned char DATA)
 {
 	I2C_Start();
-	I2C_Write(WRITE(device_address));
+	I2C_Write(EXTEND_WRITE_BIT(device_address));
 	I2C_Wait();
 	I2C_Wait_ACK();
 
@@ -359,7 +359,7 @@ void I2C_SingleByteWrite(unsigned char device_address, unsigned char reg_address
 void I2C_MultipleByteWrite(unsigned char device_address, unsigned char reg_address, int max_count, unsigned char data_wr[])
 {
 	I2C_Start();
-	I2C_Write(WRITE(device_address));
+	I2C_Write(EXTEND_WRITE_BIT(device_address));
 	I2C_Wait();
 	I2C_Wait_ACK();
 
