@@ -9,6 +9,7 @@
 #include <math.h>
 
 #define PIN(x)                 (1 << x)
+
 /* Macros for  Green LED*/
 #define GREEN_LED             (5)
 #define GREEN_LED_ON()       PTD->PCOR |= PIN(GREEN_LED) ;
@@ -131,23 +132,24 @@ void SWITCH_Init(void)
 /* Initialise Timer*/
 int32_t volatile msTicks = 0;
 
-void init_SysTick_interrupt()
+void SysTick_interrupt_Init()
 {
-SysTick->LOAD = SystemCoreClock / 1000; //configured the SysTick to count in 1ms // 20971520U
-/* Select Core Clock & Enable SysTick & Enable Interrupt */
-SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk 
-								|SysTick_CTRL_TICKINT_Msk 
-								|SysTick_CTRL_ENABLE_Msk;
+	SysTick->LOAD = SystemCoreClock / 1000; //configured the SysTick to count in 1ms // 20971520U
+	/* Select Core Clock & Enable SysTick & Enable Interrupt */
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 }
 
-void Delay_Systick (uint32_t TICK) { 
+void Delay_Systick (uint32_t TICK) 
+{ 
 	while (msTicks < TICK-1); 
 	msTicks = 0; // Reset counter 
 }
 
-void SysTick_Handler (void) { // SysTick interrupt Handler
+void SysTick_Handler (void) 
+{ 
 	msTicks++; // Increment counter 
 }
+
 #define GREEN_LED_HZ 1
 #define RED_LED_HZ 2
 #define GREEN_LED_PERIOD_MS 1000/GREEN_LED_HZ
@@ -239,7 +241,6 @@ void I2C_Start()
 	//Set I2C in Transmit mode
 	I2C0->C1 |=I2C_C1_TX_MASK;
 	// Send Start bit
-	
 	I2C0->C1 |=I2C_C1_MST_MASK;
 }
 
@@ -286,6 +287,7 @@ unsigned char I2C_SingleByteRead(unsigned char device_address, unsigned char reg
 	I2C_Wait_ACK() ;
 
 	I2C_Set_RX_mode();
+	// Dummy Data
 	DATA = I2C_Read();
 	I2C_Wait();
 	I2C_Stop();
@@ -297,7 +299,8 @@ unsigned char I2C_SingleByteRead(unsigned char device_address, unsigned char reg
 }
 
 void I2C_MultipleByteRead(unsigned char device_address,unsigned char reg_address, int max_count)
-{   unsigned char DATA_DUMMY = 0;
+{   
+	unsigned char DATA_DUMMY = 0;
 	I2C_Start();
 	I2C_Write(EXTEND_WRITE_BIT(device_address));
 	I2C_Wait();
@@ -397,37 +400,28 @@ void Magnetometer_Init(void)
 
 void Magnetometer_Acq(void)
 {
-
     const int axis_count = 3;
     const int data_length = 6;
-    
 
     I2C_MultipleByteRead(MAG_DEVICE_ADDRESS, MAG_OUT_X_MSB, data_length);
-    
 
-    for (int i = 0; i < axis_count; i++)
-    {
+    for (int i = 0; i < axis_count; i++){
         DATA_READ_XYZ[i] = (short int)((data_read[2 * i] << 8) | data_read[2 * i + 1]);
     }
     
-    for (int i = 0; i < axis_count; i++)
-    {
-        if ((DATA_MAX_XYZ[i] == 0) && (DATA_MIN_XYZ[i] == 0))
-        {
-
+    for (int i = 0; i < axis_count; i++){
+        if ((DATA_MAX_XYZ[i] == 0) && (DATA_MIN_XYZ[i] == 0)){
             DATA_MAX_XYZ[i] = DATA_READ_XYZ[i];
             DATA_MIN_XYZ[i] = DATA_READ_XYZ[i];
         }
-        else
-        {
-            if (DATA_READ_XYZ[i] > DATA_MAX_XYZ[i])
-            {
+        else{
+			// Finding the Maximum value along each axis
+            if (DATA_READ_XYZ[i] > DATA_MAX_XYZ[i]){
                 DATA_MAX_XYZ[i] = DATA_READ_XYZ[i];
             }
             
             // Finding the Minimum value along each axis
-            if (DATA_READ_XYZ[i] < DATA_MIN_XYZ[i])
-            {
+            if (DATA_READ_XYZ[i] < DATA_MIN_XYZ[i]){
                 DATA_MIN_XYZ[i] = DATA_READ_XYZ[i];
             }
         }
@@ -450,33 +444,26 @@ void Magnetometer_Run(void)
     
     I2C_MultipleByteRead(MAG_DEVICE_ADDRESS, MAG_OUT_X_MSB, data_length);
     
-    for (int i = 0; i < axis_count; i++)
-    {
+    for (int i = 0; i < axis_count; i++){
         DATA_READ_XYZ[i] = (short int)((data_read[2 * i] << 8) | data_read[2 * i + 1]);
     }
     
-    for (int i = 0; i < axis_count; i++)
-    {
+    for (int i = 0; i < axis_count; i++){
         DATA_CAL_XYZ[i] = DATA_READ_XYZ[i] - DATA_AVG_XYZ[i];
     }
 
-    if (DATA_CAL_XYZ[1] == 0)
-    {
-        if (DATA_CAL_XYZ[0] > 0)
-        {
+    if (DATA_CAL_XYZ[1] == 0){
+        if (DATA_CAL_XYZ[0] > 0){
             ANGLE = 0;
         }
-        else if (DATA_CAL_XYZ[0] < 0)
-        {
+        else if (DATA_CAL_XYZ[0] < 0){
             ANGLE = 180;
         }
     }
-    else if (DATA_CAL_XYZ[1] < 0)
-    {
+    else if (DATA_CAL_XYZ[1] < 0){
         ANGLE = 270 - (atan((double)DATA_CAL_XYZ[0] / (double)DATA_CAL_XYZ[1]) * RAD_TO_DEG_RATIO);
     }
-    else
-    {
+    else{
         ANGLE = 90 - (atan((double)DATA_CAL_XYZ[0] / (double)DATA_CAL_XYZ[1]) * RAD_TO_DEG_RATIO);
     }
 }
@@ -485,7 +472,7 @@ int main(void)
 {
 
 	SLCD_Init();
-	init_SysTick_interrupt();
+	SysTick_interrupt_Init();
 	LED_Init();
 	SWITCH_Init();
 	I2C0_Init();
@@ -507,8 +494,7 @@ int main(void)
             }else if(eCompassState == RUN){
 				GREEN_LED_OFF()
 				eCompassState = STOP;
-			}
-			else if(eCompassState == STOP){
+			}else if(eCompassState == STOP){
 				RED_LED_OFF()
 				eCompassState = RUN;
 			}
@@ -520,16 +506,15 @@ int main(void)
 			eCompassState = STOP;
             
         }
-
         if(eCompassState == STOP){
-        	    Blink_Red_LED();
-        	    //Display STOP Message
-        	    SLCD_WriteMsg((unsigned char *)"ST0P");
+			Blink_Red_LED();
+			//Display STOP Message
+			SLCD_WriteMsg((unsigned char *)"ST0P");
         }else if(eCompassState == RUN){
-				Magnetometer_Run();
-				Blink_Green_LED();
-				snprintf(sLCD_Msg,5,"%4d",ANGLE);
-				SLCD_WriteMsg(sLCD_Msg);
+			Magnetometer_Run();
+			Blink_Green_LED();
+			snprintf(sLCD_Msg,5,"%4d",ANGLE);
+			SLCD_WriteMsg(sLCD_Msg);
         }else if(eCompassState == ACQ){
 			Magnetometer_Acq();
 			Blink_Green_LED();
